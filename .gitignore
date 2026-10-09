@@ -1,0 +1,12 @@
+# Generado por build.py (en CI lo construye el workflow de deploy)
+dist/
+
+# Configuración local de Claude Code
+.claude/
+
+# Python
+__pycache__/
+*.pyc
+
+# Duplicado suelto del logo original (la copia versionada vive en assets/)
+/logo-harumimis-original.jpeg

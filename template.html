@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Harumimi's Coffee — Caja</title>
+
+<!-- PWA -->
+<link rel="manifest" href="public/manifest.json">
+<meta name="theme-color" content="#17335A">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Harumimi's Coffee">
+<link rel="apple-touch-icon" href="public/icons/apple-touch-icon.png">
+<link rel="icon" href="public/icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Lobster&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="src/styles/main.css">
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash" onclick="hideSplash()">
+  <div class="splash-logo"><img src="assets/logo-harumimis-original.jpeg" alt="Harumimi's Coffee"></div>
+  <div class="splash-name brand-wordmark">Harumimi's Coffee</div>
+  <div class="splash-tag">Panel de caja</div>
+  <div class="splash-tap">· Toca para continuar ·</div>
+</div>
+
+<div id="app">
+
+  <header>
+    <div class="brand">
+      <div class="brand-mark"><img src="assets/logo-face.png" alt=""></div>
+      <div>
+        <h1 class="brand-wordmark">Harumimi's Coffee</h1>
+        <p>Panel de caja</p>
+      </div>
+    </div>
+    <div class="event-name-row" id="eventNameRow">
+      <span class="event-name-label" id="eventNameDisplay">—</span>
+      <button class="edit-event-btn" id="editEventNameBtn" title="Editar nombre del evento" aria-label="Editar nombre del evento">✎</button>
+    </div>
+    <div class="session-pill" id="sessionPill">Sesión abierta desde <b id="sessionSince">—</b></div>
+    <div class="install-row" id="installRow" hidden>
+      <button class="install-chip" id="installBtn" hidden>⬇ Instalar app</button>
+      <span class="install-hint" id="installHint" hidden>Instalala: Compartir ⎋ → Agregar a pantalla de inicio</span>
+      <button class="install-close" id="installClose" aria-label="Descartar">✕</button>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- PEDIDO -->
+    <section class="view active" id="view-pedido">
+      <h2 class="section-title">🧾 Nuevo pedido</h2>
+      <p class="sub">Tocá los productos para agregarlos al pedido.</p>
+      <div class="menu-grid" id="menuGrid"></div>
+
+      <div class="receipt-wrap">
+        <div class="receipt">
+          <h3>Pedido actual</h3>
+          <div id="receiptLines"></div>
+          <div class="receipt-total">
+            <span class="lbl">Total</span>
+            <span class="amt" id="orderTotal">$0</span>
+          </div>
+          <div class="customer-field" id="customerField">
+            <label for="customerNameInput">Nombre de quien pide *</label>
+            <input type="text" id="customerNameInput" placeholder="Ej: Naru">
+          </div>
+          <div class="method-row">
+            <button class="method-btn active" id="btnEfectivo" data-method="efectivo">💵 Efectivo</button>
+            <button class="method-btn" id="btnTransferencia" data-method="transferencia">📲 Transferencia</button>
+          </div>
+          <button class="confirm-btn" id="confirmOrderBtn" disabled>Confirmar pedido</button>
+          <button class="clear-link" id="clearOrderBtn">Vaciar pedido</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="view" id="view-historial">
+      <h2 class="section-title">📋 Historial de eventos</h2>
+      <p class="sub">Cada evento agrupa sus pedidos y su cierre. Si algo se cargó mal en el evento en curso, anulalo — no lo borres a ojo del total.</p>
+      <div id="historyList"></div>
+    </section>
+
+    <!-- MENU -->
+    <section class="view" id="view-menu">
+      <h2 class="section-title">🏷️ Productos</h2>
+      <p class="sub">Editá precios o sumá agregados del evento.</p>
+      <div id="itemList"></div>
+      <button class="add-item-btn" id="addMenuItemBtn">+ Agregar producto</button>
+    </section>
+
+    <!-- CIERRE -->
+    <section class="view" id="view-cierre">
+      <h2 class="section-title">🧮 Cierre de caja</h2>
+      <p class="sub">Esto es lo que la app espera encontrar en la caja.</p>
+      <div class="close-card">
+        <div class="close-row"><span>Pedidos válidos</span><span class="v" id="closeCount">0</span></div>
+        <div class="close-row"><span>💵 Efectivo esperado</span><span class="v" id="closeEfectivo">$0</span></div>
+        <div class="close-row"><span>📲 Transferencia</span><span class="v" id="closeTransferencia">$0</span></div>
+        <div class="close-row grand"><span>Total recaudado</span><span class="v" id="closeGrand">$0</span></div>
+      </div>
+
+      <div class="close-card">
+        <div class="count-field">
+          <label>Fondo inicial en caja ($)</label>
+          <input type="number" inputmode="decimal" placeholder="0" id="fondoInicialInput">
+        </div>
+        <div class="close-row" style="margin-top:10px;"><span>🧮 Total esperado en caja</span><span class="v" id="closeExpectedInCaja">$0</span></div>
+        <div class="count-field" style="margin-top:14px;">
+          <label>Efectivo contado en la caja ($)</label>
+          <input type="number" inputmode="decimal" placeholder="0" id="cashCountInput">
+        </div>
+        <div class="diff-banner neutral" id="diffBanner">Ingresá el efectivo contado para comparar.</div>
+        <button class="close-btn" id="closeCajaBtn" disabled>Cerrar caja, descargar reporte y abrir sesión nueva</button>
+      </div>
+
+      <p class="sub" style="margin-top:4px;">¿Buscás cierres anteriores? Están en la pestaña Historial, cada uno con su reporte descargable.</p>
+
+      <div class="app-footer">Hecho con ☕ por <b>RED</b></div>
+    </section>
+
+  </main>
+
+  <nav>
+    <button class="nav-btn active" data-view="pedido">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.2a2 2 0 0 0 2-1.6L21 8H6"/><circle cx="9" cy="20" r="1.4"/><circle cx="17" cy="20" r="1.4"/></svg>
+      Pedido
+    </button>
+    <button class="nav-btn" data-view="historial">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3z"/><path d="M9 8h6M9 12h6"/></svg>
+      Historial
+    </button>
+    <button class="nav-btn" data-view="menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20.6 12.6L12 21.2 3 12.2 3 4h8.2z"/><circle cx="7.5" cy="7.5" r="1.2" fill="currentColor" stroke="none"/></svg>
+      Menú
+    </button>
+    <button class="nav-btn" data-view="cierre">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 7h8M8 11h2M13 11h3M8 15h2M13 15h3"/></svg>
+      Cierre
+    </button>
+  </nav>
+
+</div>
+
+<div class="overlay" id="modalOverlay">
+  <div class="modal" id="modalBox"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="src/vendor/docx.min.js"></script>
+<script src="src/data/defaultMenu.js"></script>
+<script src="src/scripts/state.js"></script>
+<script src="src/scripts/pedido.js"></script>
+<script src="src/scripts/historial.js"></script>
+<script src="src/scripts/menu.js"></script>
+<script src="src/scripts/report.js"></script>
+<script src="src/scripts/cierre.js"></script>
+<script src="src/scripts/install.js"></script>
+<script src="src/scripts/splash.js"></script>
+
+<script>
+if('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
+</script>
+</body>
+</html>

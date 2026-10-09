@@ -1,0 +1,18 @@
+Copyright (c) 2026 <red/> system.dev. Todos los derechos reservados.
+All rights reserved.
+
+El código fuente de este repositorio se publica únicamente para permitir su
+despliegue y visualización. No se otorga permiso para copiar, modificar,
+distribuir, sublicenciar ni usar este código, total o parcialmente, sin
+autorización previa y por escrito del titular del copyright. Esta no es una
+licencia de código abierto.
+
+Marca y material de marca
+El nombre "Harumimi's Coffee", su logo, la mascota y demás material gráfico y
+de marca pertenecen a sus respectivos dueños y NO están cubiertos por esta
+licencia, ni por el copyright indicado arriba.
+
+Componentes de terceros
+Los componentes de terceros incluidos (p. ej. src/vendor/docx.min.js: docx,
+licencia MIT; JSZip, MIT o GPLv3) se rigen por sus propias licencias; ver
+src/vendor/LICENSES.md.
