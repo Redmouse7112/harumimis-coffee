@@ -27,13 +27,6 @@ function getEvents(){
   });
 }
 
-function eventTotals(orders){
-  const valid = orders.filter(o=> !o.voided);
-  const efectivo = valid.filter(o=> o.method==='efectivo').reduce((s,o)=> s+o.total,0);
-  const transferencia = valid.filter(o=> o.method==='transferencia').reduce((s,o)=> s+o.total,0);
-  return { count: valid.length, efectivo, transferencia, grand: efectivo+transferencia };
-}
-
 function renderHistory(){
   const list = document.getElementById('historyList');
   const events = getEvents();
@@ -45,7 +38,7 @@ function renderHistory(){
 
   list.innerHTML = '';
   events.forEach((ev, idx)=>{
-    const t = eventTotals(ev.orders);
+    const t = computeTotals(ev.orders);
     const firstOrder = ev.orders[ev.orders.length-1];
     const dateLabel = ev.closure ? dateFmt(ev.closure.closedAt)
       : (firstOrder ? dateFmt(firstOrder.timestamp) : dateFmt(state.sessionSince));

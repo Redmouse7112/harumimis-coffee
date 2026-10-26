@@ -1,65 +1,11 @@
 /* ---------------- ESTADO + PERSISTENCIA + VERSIONADO ---------------- */
 
 const STORAGE_KEY = 'harumimi-state';
-const STATE_VERSION = 1;
-
-function defaultState(){
-  return {
-    menu: DEFAULT_MENU.map(function(i){ return Object.assign({}, i); }),
-    orders: [],
-    closures: [],
-    sessionId: 1,
-    sessionSince: new Date().toISOString(),
-    eventName: '',
-    eventNameSet: false,
-    eventNameCustom: false,
-    fondoInicial: 0,
-    version: STATE_VERSION,
-  };
-}
 
 let state = defaultState();
 let currentOrder = []; // {itemId, name, price, qty}
 let currentMethod = 'efectivo';
 let currentCustomerName = '';
-
-/**
- * Migra datos guardados por versiones anteriores al modelo de estado actual.
- * `raw` puede ser el objeto ya parseado desde storage, o null/undefined si
- * todavía no hay nada guardado.
- *
- * La v1 (single-file, sin `state.version`) no tenía `order.customerName`.
- * Detectamos esos datos "legacy" por la ausencia del campo `version` y les
- * completamos ese dato faltante antes de seguir. Futuros cambios de modelo
- * se agregan como pasos adicionales acá abajo, sin tocar el resto de la app.
- */
-function migrateState(raw){
-  const saved = raw || {};
-  const isLegacy = !('version' in saved);
-  const merged = Object.assign(defaultState(), saved);
-
-  if(isLegacy){
-    merged.orders = (merged.orders || []).map(function(o){
-      return Object.assign({ customerName:'' }, o);
-    });
-  }
-
-  // `eventNameCustom` se sumó despues de `eventNameSet`: en sesiones guardadas
-  // que ya tenian un nombre "resuelto" (el usuario cerro el modal, aceptando el
-  // default o escribiendo uno propio) no podemos distinguir cual fue — el
-  // criterio mas seguro es congelarlo como personalizado en vez de arriesgarnos
-  // a pisar en silencio un nombre que Rudy ya viene viendo hace dias.
-  if(!('eventNameCustom' in saved)){
-    merged.eventNameCustom = !!merged.eventNameSet;
-  }
-
-  merged.version = STATE_VERSION;
-
-  // Futuros pasos de migración, ej:
-  // if(merged.version < 2){ ...; merged.version = 2; }
-
-  return merged;
-}
 
 function saveState(){
   try{
@@ -74,12 +20,15 @@ function saveState(){
 
 async function loadState(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      state = migrateState(JSON.parse(raw));
+    // loadStoredState no lanza: con datos viejos guarda una copia cruda antes de
+    // migrar, y con datos ilegibles conserva el texto original aparte.
+    const res = loadStoredState(localStorage, STORAGE_KEY);
+    state = res.state;
+    if(res.status === 'corrupt'){
+      showToast('⚠️ Los datos guardados estaban dañados: se conservó una copia aparte', { error:true, duration:5000 });
     }
   }catch(e){
-    // no hay datos guardados todavía, se queda con el estado por defecto
+    // localStorage inaccesible: se queda con el estado por defecto
   }
   render();
   onStateLoaded();
@@ -149,28 +98,9 @@ function renderSessionPill(){
 
 /* ---------------- NOMBRE DEL EVENTO ---------------- */
 
-function defaultEventNameFor(iso){
-  const d = new Date(iso);
-  return 'Evento del ' + d.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
-}
-
-/**
- * El default ("Evento del {hoy}") se calcula contra la fecha real del
- * sistema en el momento de mostrarlo, no contra la fecha en que arrancó la
- * sesión — así una sesión abierta hace varios días sigue mostrando la fecha
- * de hoy mientras nadie le puso un nombre propio.
- */
-function liveDefaultEventName(){
-  return defaultEventNameFor(new Date().toISOString());
-}
-
-/**
- * Nombre a mostrar/congelar en este momento: el personalizado si el usuario
- * ya confirmó uno distinto del default, o el default recalculado en vivo
- * mientras eso no pase.
- */
+/** Nombre a mostrar/congelar ahora mismo (la regla vive en logic.js). */
 function currentEventName(){
-  return (state.eventNameCustom && state.eventName) ? state.eventName : liveDefaultEventName();
+  return eventNameFor(state, new Date());
 }
 
 function promptEventName(){
@@ -223,4 +153,5 @@ function render(){
   renderMenuGrid();
   renderReceipt();
   renderSessionPill();
+  renderBackupStatus();
 }

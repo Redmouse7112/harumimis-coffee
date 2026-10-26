@@ -1,0 +1,32 @@
+name: Tests
+
+# Revisión de pull requests y de la rama nucleo: corre los tests y comprueba que
+# el bundle arma. NO despliega nada (el deploy vive en deploy.yml, solo desde main).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [nucleo]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+
+      - name: Tests (node --test)
+        run: node --test
+
+      - name: Construir el bundle
+        run: python build.py

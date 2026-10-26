@@ -6,3 +6,5 @@ const DEFAULT_MENU = [
   { id: 'm5', name:'Medialuna', price:600 },
   { id: 'm6', name:'Alfajor', price:800 },
 ];
+
+if(typeof module !== 'undefined' && module.exports) module.exports = DEFAULT_MENU;

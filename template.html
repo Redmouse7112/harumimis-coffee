@@ -15,8 +15,6 @@
 <link rel="apple-touch-icon" href="public/icons/apple-touch-icon.png">
 <link rel="icon" href="public/icons/icon-192.png">
 
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Lobster&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="src/styles/main.css">
 </head>
 <body>
@@ -121,6 +119,17 @@
         <button class="close-btn" id="closeCajaBtn" disabled>Cerrar caja, descargar reporte y abrir sesión nueva</button>
       </div>
 
+      <div class="close-card">
+        <h3 class="backup-title">💾 Copia de seguridad</h3>
+        <p class="sub" style="margin:0 0 10px;">Los datos viven solo en este dispositivo. Exportá una copia cada tanto para no perder el historial.</p>
+        <div class="diff-banner neutral" id="backupStatus" style="margin-top:0;"></div>
+        <div class="backup-actions">
+          <button class="btn-secondary" id="exportBackupBtn">⬇ Exportar copia</button>
+          <button class="btn-secondary" id="importBackupBtn">⬆ Importar copia</button>
+        </div>
+        <input type="file" id="importBackupFile" accept="application/json,.json" hidden>
+      </div>
+
       <p class="sub" style="margin-top:4px;">¿Buscás cierres anteriores? Están en la pestaña Historial, cada uno con su reporte descargable.</p>
 
       <div class="app-footer">Hecho con ☕ por <b>RED</b></div>
@@ -157,12 +166,14 @@
 
 <script src="src/vendor/docx.min.js"></script>
 <script src="src/data/defaultMenu.js"></script>
+<script src="src/scripts/logic.js"></script>
 <script src="src/scripts/state.js"></script>
 <script src="src/scripts/pedido.js"></script>
 <script src="src/scripts/historial.js"></script>
 <script src="src/scripts/menu.js"></script>
 <script src="src/scripts/report.js"></script>
 <script src="src/scripts/cierre.js"></script>
+<script src="src/scripts/backup.js"></script>
 <script src="src/scripts/install.js"></script>
 <script src="src/scripts/splash.js"></script>
 

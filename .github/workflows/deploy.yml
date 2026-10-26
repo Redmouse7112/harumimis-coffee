@@ -1,6 +1,7 @@
 name: Deploy a GitHub Pages
 
-# Cada push a main construye el bundle (python build.py -> dist/) y lo publica.
+# Cada push a main corre los tests, construye el bundle (python build.py -> dist/)
+# y lo publica.
 # También se puede correr a mano desde la pestaña Actions (workflow_dispatch).
 on:
   push:
@@ -21,9 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+
       - uses: actions/setup-python@v7
         with:
           python-version: "3.x"
+
+      - name: Tests (node --test)
+        run: node --test
 
       - name: Construir el bundle
         run: python build.py

@@ -1,3 +1,17 @@
+/* Fuentes locales (subconjunto latin, variables donde existen): el service worker
+   las precachea, así la marca se ve igual sin conexión. build.py reescribe
+   src/fonts/ -> fonts/ al armar dist/. */
+@font-face{ font-family:'Baloo 2'; font-style:normal; font-weight:500 800; font-display:swap;
+  src:url("src/fonts/baloo2-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Lobster'; font-style:normal; font-weight:400; font-display:swap;
+  src:url("src/fonts/lobster-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Nunito'; font-style:normal; font-weight:400 800; font-display:swap;
+  src:url("src/fonts/nunito-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Space Mono'; font-style:normal; font-weight:400; font-display:swap;
+  src:url("src/fonts/space-mono-400-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Space Mono'; font-style:normal; font-weight:700; font-display:swap;
+  src:url("src/fonts/space-mono-700-latin.woff2") format('woff2'); }
+
 :root{
   --blue-deep:#17335A;
   --blue-mid:#2E5FA3;
@@ -319,6 +333,19 @@ h2.section-title{
   font-size:15px; font-weight:700; cursor:pointer;
 }
 .close-btn:disabled{ background:#E3E7EE; color:#9AA6B8; }
+
+/* ---------- COPIA DE SEGURIDAD ---------- */
+.backup-title{ font-family:'Baloo 2',sans-serif; color:var(--blue-deep); margin:0 0 4px; font-size:16px;}
+.backup-actions{ display:flex; gap:10px; margin-top:12px; }
+.backup-actions button{
+  flex:1; padding:12px 8px; border-radius:12px; border:none; font-weight:800; font-size:13px; cursor:pointer;
+  font-family:'Nunito',sans-serif;
+}
+.nav-btn{ position:relative; }
+.nav-btn.needs-backup::after{
+  content:''; position:absolute; top:6px; left:calc(50% + 8px); width:9px; height:9px;
+  border-radius:50%; background:var(--bad); border:1.5px solid #fff;
+}
 
 /* ---------- FOOTER CREDIT ---------- */
 .app-footer{

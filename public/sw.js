@@ -11,7 +11,14 @@ var PRECACHE = [
   './index.html',
   './manifest.json',
   './icon-192.png',
-  './icon-512.png'
+  './icon-512.png',
+  // fuentes locales (build.py las copia a dist/fonts/): sin esto la marca se
+  // pierde en el primer uso sin conexión
+  './fonts/baloo2-latin.woff2',
+  './fonts/lobster-latin.woff2',
+  './fonts/nunito-latin.woff2',
+  './fonts/space-mono-400-latin.woff2',
+  './fonts/space-mono-700-latin.woff2'
 ];
 
 self.addEventListener('install', function(event){
