@@ -13,7 +13,8 @@ harumimis-coffee/
 ├── template.html              # markup fuente (referencia archivos sueltos de src/ y public/)
 ├── build.py                   # arma dist/index.html: un único HTML con todo embebido
 ├── assets/
-│   └── logo-harumimis-original.jpeg
+│   ├── logo-harumimis-original.jpeg  # splash (307×300, se muestra a 150 px)
+│   └── logo-face.png                 # header (120×120, se muestra a 60 px)
 ├── src/
 │   ├── data/
 │   │   └── defaultMenu.js     # menú por defecto
@@ -61,7 +62,9 @@ python build.py
 ```
 
 Esto genera `dist/index.html`: un único archivo HTML con el CSS, todo el JS
-(concatenado en orden de dependencia) y el logo (base64) embebidos. Es el
+(concatenado en orden de dependencia) y los logos (base64) embebidos. Pesa
+unos 0,56 MB, casi todo la librería `docx`; si se agregan imágenes, redimensionarlas
+al doble de su tamaño en pantalla antes de ponerlas en `assets/`. Es el
 mismo archivo que ya funcionaba como v1 — se puede abrir directo desde el
 celular, sin instalar nada, sin conexión. Además copia `manifest.json`,
 `sw.js`, los íconos y las fuentes (`dist/fonts/`) a `dist/`, todos con rutas relativas planas, para que
