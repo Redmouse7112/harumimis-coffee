@@ -1,3 +1,17 @@
+/* Fuentes locales (subconjunto latin, variables donde existen): el service worker
+   las precachea, así la marca se ve igual sin conexión. build.py reescribe
+   src/fonts/ -> fonts/ al armar dist/. */
+@font-face{ font-family:'Baloo 2'; font-style:normal; font-weight:500 800; font-display:swap;
+  src:url("src/fonts/baloo2-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Lobster'; font-style:normal; font-weight:400; font-display:swap;
+  src:url("src/fonts/lobster-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Nunito'; font-style:normal; font-weight:400 800; font-display:swap;
+  src:url("src/fonts/nunito-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Space Mono'; font-style:normal; font-weight:400; font-display:swap;
+  src:url("src/fonts/space-mono-400-latin.woff2") format('woff2'); }
+@font-face{ font-family:'Space Mono'; font-style:normal; font-weight:700; font-display:swap;
+  src:url("src/fonts/space-mono-700-latin.woff2") format('woff2'); }
+
 :root{
   --blue-deep:#17335A;
   --blue-mid:#2E5FA3;

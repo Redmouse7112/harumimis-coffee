@@ -28,6 +28,7 @@ harumimis-coffee/
 │   │   ├── backup.js          # exportar/importar copia de seguridad (JSON) y aviso de backup
 │   │   ├── install.js         # botón "Instalar app" (beforeinstallprompt / aviso iOS)
 │   │   └── splash.js          # splash screen + bootstrap final (loadState)
+│   ├── fonts/                 # Baloo 2, Lobster, Nunito, Space Mono (WOFF2 latin, OFL), precacheadas por el SW
 │   ├── styles/
 │   │   └── main.css
 │   └── vendor/
@@ -46,6 +47,7 @@ harumimis-coffee/
     ├── index.html
     ├── manifest.json
     ├── sw.js
+    ├── fonts/
     └── icon-*.png
 ```
 
@@ -62,7 +64,7 @@ Esto genera `dist/index.html`: un único archivo HTML con el CSS, todo el JS
 (concatenado en orden de dependencia) y el logo (base64) embebidos. Es el
 mismo archivo que ya funcionaba como v1 — se puede abrir directo desde el
 celular, sin instalar nada, sin conexión. Además copia `manifest.json`,
-`sw.js` y los íconos a `dist/`, todos con rutas relativas planas, para que
+`sw.js`, los íconos y las fuentes (`dist/fonts/`) a `dist/`, todos con rutas relativas planas, para que
 funcione como PWA instalable.
 
 Para modificar la app: **editar los archivos de `src/`** (o `template.html`

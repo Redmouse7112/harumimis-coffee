@@ -44,6 +44,7 @@ JS_FILES = [
     SRC / "scripts" / "splash.js",
 ]
 
+FONTS_DIR = SRC / "fonts"
 ICONS = ["icon-192.png", "icon-512.png", "icon-512-maskable.png", "apple-touch-icon.png"]
 
 
@@ -88,6 +89,9 @@ def build_html():
     html = html.replace("assets/logo-harumimis-original.jpeg", data_uri(LOGO_FILE))
     html = html.replace("assets/logo-face.png", data_uri(LOGO_FACE_FILE))
 
+    # 3b) fuentes locales: se copian a dist/fonts/ y el CSS apunta ahi
+    html = html.replace('url("src/fonts/', 'url("fonts/')
+
     # 4) manifest / iconos -> rutas planas (copiados junto al html)
     html = html.replace("public/manifest.json", "./manifest.json")
     html = html.replace("public/icons/apple-touch-icon.png", "./apple-touch-icon.png")
@@ -96,6 +100,7 @@ def build_html():
     # 5) Guarda: ninguna referencia a archivos fuente puede quedar sin resolver
     # (es lo que dejaba el logo del header roto cuando se agrego un asset nuevo)
     leftovers = re.findall(r'(?:src|href)="((?:assets|public|src)/[^"]*)"', html)
+    leftovers += re.findall(r"""url\(["']?((?:assets|public|src)/[^)"']*)""", html)
     if leftovers:
         raise SystemExit("Rutas sin resolver en index.html: " + ", ".join(leftovers))
 
@@ -122,7 +127,12 @@ def main():
     html = build_html()
     manifest = build_manifest()
 
-    bid = build_id(html, manifest, *[(PUBLIC / "icons" / i).read_bytes() for i in ICONS])
+    fonts = sorted(FONTS_DIR.glob("*.woff2"))
+    bid = build_id(
+        html, manifest,
+        *[(PUBLIC / "icons" / i).read_bytes() for i in ICONS],
+        *[f.read_bytes() for f in fonts],
+    )
 
     sw = read(PUBLIC / "sw.js")
     if "__BUILD_ID__" not in sw:
@@ -134,11 +144,20 @@ def main():
     write(DIST / "sw.js", sw)
     for icon in ICONS:
         shutil.copyfile(PUBLIC / "icons" / icon, DIST / icon)
+    (DIST / "fonts").mkdir(exist_ok=True)
+    for f in fonts:
+        shutil.copyfile(f, DIST / "fonts" / f.name)
+
+    # Guarda: todo lo que el service worker precachea tiene que existir en dist/
+    missing = [u for u in re.findall(r"'\./([^']+)'", sw.split("var PRECACHE")[1].split("];")[0])
+               if u and not (DIST / u).exists()]
+    if missing:
+        raise SystemExit("sw.js precachea archivos que no existen en dist/: " + ", ".join(missing))
 
     size_kb = (DIST / "index.html").stat().st_size / 1024
     print(f"dist/index.html generado ({size_kb:.0f} KB, todo embebido)")
     print(f"dist/sw.js con cache 'harumimi-coffee-{bid}'")
-    print("dist/manifest.json e iconos copiados")
+    print(f"dist/manifest.json, iconos y {len(fonts)} fuentes copiados")
 
 
 if __name__ == "__main__":
