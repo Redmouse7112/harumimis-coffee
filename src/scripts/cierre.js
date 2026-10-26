@@ -1,9 +1,6 @@
 /* ---------------- CIERRE ---------------- */
 function sessionTotals(){
-  const orders = state.orders.filter(o=> o.sessionId===state.sessionId && !o.voided);
-  const efectivo = orders.filter(o=> o.method==='efectivo').reduce((s,o)=> s+o.total,0);
-  const transferencia = orders.filter(o=> o.method==='transferencia').reduce((s,o)=> s+o.total,0);
-  return { count: orders.length, efectivo, transferencia, grand: efectivo+transferencia };
+  return computeTotals(state.orders.filter(o=> o.sessionId===state.sessionId));
 }
 
 function renderCierre(){
@@ -36,7 +33,6 @@ document.getElementById('fondoInicialInput').addEventListener('input', (e)=>{
 function updateDiff(){
   const t = sessionTotals();
   const fondo = parseFloat(document.getElementById('fondoInicialInput').value)||0;
-  const expected = t.efectivo + fondo;
   const input = document.getElementById('cashCountInput');
   const banner = document.getElementById('diffBanner');
   const closeBtn = document.getElementById('closeCajaBtn');
@@ -48,7 +44,7 @@ function updateDiff(){
     return;
   }
   const counted = parseFloat(val)||0;
-  const diff = counted - expected;
+  const diff = cashDifference(counted, t.efectivo, fondo);
   closeBtn.disabled = false;
   if(diff===0){
     banner.className = 'diff-banner ok';
@@ -78,7 +74,7 @@ document.getElementById('closeCajaBtn').addEventListener('click', ()=>{
     transferencia: t.transferencia,
     grand: t.grand,
     efectivoContado: counted,
-    diferencia: counted - (t.efectivo + fondo),
+    diferencia: cashDifference(counted, t.efectivo, fondo),
   };
   openModal(`
     <h3>Cerrar caja</h3>

@@ -18,7 +18,8 @@ harumimis-coffee/
 │   ├── data/
 │   │   └── defaultMenu.js     # menú por defecto
 │   ├── scripts/
-│   │   ├── state.js           # estado, state.version, migrateState, utils compartidos
+│   │   ├── logic.js           # lógica pura sin DOM (migraciones, totales, arqueo, nombre de evento); también se carga en Node
+│   │   ├── state.js           # estado global, persistencia, utils compartidos
 │   │   ├── pedido.js          # tab Pedido (grid de menú, recibo, nombre de cliente)
 │   │   ├── historial.js       # tab Historial (eventos = sesión + pedidos + cierre)
 │   │   ├── menu.js            # tab Menú (alta/edición/baja de productos)
@@ -31,6 +32,8 @@ harumimis-coffee/
 │   └── vendor/
 │       ├── docx.min.js        # librería docx (MIT), para generar el .docx
 │       └── LICENSES.md        # licencias de terceros
+├── tests/
+│   └── logic.test.js          # tests de logic.js con node --test (sin dependencias)
 ├── public/
 │   ├── manifest.json          # PWA: nombre, colores, íconos
 │   ├── sw.js                  # service worker (cache-first; build.py inyecta el hash de caché)
@@ -66,14 +69,29 @@ para markup), correr `python build.py` de nuevo, y probar `dist/index.html`.
 
 ## Modelo de datos y migraciones
 
-El estado guarda `state.version` (arranca en `1`). Al cargar, `migrateState()`
-(en `src/scripts/state.js`) detecta datos guardados por versiones anteriores
-(sin el campo `version`) y les completa los campos nuevos que falten —por
-ejemplo, `order.customerName` en pedidos cargados por la v1— sin perder nada
-de lo ya guardado.
+El estado guarda `state.version`, que hoy es `2` (`STATE_VERSION` en
+`src/scripts/logic.js`). Al cargar, `migrateState()` aplica en orden las
+migraciones numeradas de `MIGRATIONS` (el paso `n` lleva de la versión `n` a la
+`n+1`) y no pierde nada de lo ya guardado. Un estado sin `version` es la v0 (la
+app de un solo archivo): sus pedidos no tenían `customerName`.
 
-Para un futuro cambio de modelo: agregar un paso `if (merged.version < N) {...}`
-dentro de `migrateState()`, sin tocar el resto de la app.
+Para un cambio de modelo: agregar un paso al final de `MIGRATIONS`, subir
+`STATE_VERSION` y sumar un test en `tests/logic.test.js`. Ojo: los datos
+guardados con `version: 1` incluyen estados de antes y de después de que
+existieran `eventNameCustom` y `fondoInicial` (la versión no se incrementó
+cuando se sumaron), por eso el paso 1→2 es idempotente.
+
+## Tests
+
+Sin dependencias, solo Node (>= 20):
+
+```bash
+node --test
+```
+
+Cubren las funciones puras de `src/scripts/logic.js`: totales de sesión,
+diferencia de arqueo, `migrateState` y el nombre del evento. Ese archivo no
+puede tocar `document`, `localStorage` ni el `state` global.
 
 ## Deploy automático (GitHub Pages)
 

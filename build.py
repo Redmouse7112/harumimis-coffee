@@ -32,6 +32,7 @@ LOGO_FACE_FILE = (ASSETS / "logo-face.png", "image/png")
 JS_FILES = [
     SRC / "vendor" / "docx.min.js",
     SRC / "data" / "defaultMenu.js",
+    SRC / "scripts" / "logic.js",
     SRC / "scripts" / "state.js",
     SRC / "scripts" / "pedido.js",
     SRC / "scripts" / "historial.js",

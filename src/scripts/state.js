@@ -1,74 +1,11 @@
 /* ---------------- ESTADO + PERSISTENCIA + VERSIONADO ---------------- */
 
 const STORAGE_KEY = 'harumimi-state';
-const STATE_VERSION = 2;
-
-function defaultState(){
-  return {
-    menu: DEFAULT_MENU.map(function(i){ return Object.assign({}, i); }),
-    orders: [],
-    closures: [],
-    sessionId: 1,
-    sessionSince: new Date().toISOString(),
-    eventName: '',
-    eventNameSet: false,
-    eventNameCustom: false,
-    fondoInicial: 0,
-    version: STATE_VERSION,
-  };
-}
 
 let state = defaultState();
 let currentOrder = []; // {itemId, name, price, qty}
 let currentMethod = 'efectivo';
 let currentCustomerName = '';
-
-/**
- * Migraciones numeradas: MIGRATIONS[n] lleva un estado de la versión n a la
- * n+1 (muta y devuelve `st`). STATE_VERSION siempre es MIGRATIONS.length.
- * Para un cambio de modelo: agregar un paso al final y subir STATE_VERSION.
- *
- * Historia: la v0 es la app de un solo archivo (sin campo `version`). La v1 se
- * guardó con `version: 1` durante todos los cambios de esquema posteriores
- * (nunca se incrementó), así que los datos con version 1 pueden o no tener ya
- * `eventNameCustom` y `fondoInicial`. Por eso el paso 1→2 es idempotente y
- * chequea si el campo ya existe: es la única detección por presencia que queda.
- */
-const MIGRATIONS = [
-  // 0 → 1: la v0 no tenía `order.customerName`
-  function(st){
-    st.orders = (st.orders || []).map(function(o){
-      return Object.assign({ customerName:'' }, o);
-    });
-    return st;
-  },
-  // 1 → 2: `eventNameCustom` y `fondoInicial` se sumaron sin subir la versión.
-  // `eventNameCustom` vino después de `eventNameSet`: en sesiones que ya tenían
-  // un nombre "resuelto" no podemos distinguir si fue el default o uno propio —
-  // lo más seguro es congelarlo como personalizado antes que pisar en silencio
-  // un nombre que Rudy ya viene viendo hace días.
-  function(st){
-    if(!('eventNameCustom' in st)) st.eventNameCustom = !!st.eventNameSet;
-    if(!('fondoInicial' in st)) st.fondoInicial = 0;
-    return st;
-  },
-];
-
-/**
- * Migra datos guardados por versiones anteriores al modelo de estado actual.
- * `raw` puede ser el objeto ya parseado desde storage, o null/undefined si
- * todavía no hay nada guardado. Un estado sin `version` (o inválida) cuenta
- * como v0; uno con una versión más nueva que la de esta app no se toca.
- */
-function migrateState(raw){
-  let st = Object.assign({}, raw || {});
-  let v = (Number.isInteger(st.version) && st.version > 0) ? st.version : 0;
-  for(; v < STATE_VERSION; v++){
-    st = MIGRATIONS[v](st);
-    st.version = v + 1;
-  }
-  return Object.assign(defaultState(), st);
-}
 
 function saveState(){
   try{
@@ -158,28 +95,9 @@ function renderSessionPill(){
 
 /* ---------------- NOMBRE DEL EVENTO ---------------- */
 
-function defaultEventNameFor(iso){
-  const d = new Date(iso);
-  return 'Evento del ' + d.toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
-}
-
-/**
- * El default ("Evento del {hoy}") se calcula contra la fecha real del
- * sistema en el momento de mostrarlo, no contra la fecha en que arrancó la
- * sesión — así una sesión abierta hace varios días sigue mostrando la fecha
- * de hoy mientras nadie le puso un nombre propio.
- */
-function liveDefaultEventName(){
-  return defaultEventNameFor(new Date().toISOString());
-}
-
-/**
- * Nombre a mostrar/congelar en este momento: el personalizado si el usuario
- * ya confirmó uno distinto del default, o el default recalculado en vivo
- * mientras eso no pase.
- */
+/** Nombre a mostrar/congelar ahora mismo (la regla vive en logic.js). */
 function currentEventName(){
-  return (state.eventNameCustom && state.eventName) ? state.eventName : liveDefaultEventName();
+  return eventNameFor(state, new Date());
 }
 
 function promptEventName(){
