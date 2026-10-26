@@ -1,7 +1,7 @@
 /* ---------------- ESTADO + PERSISTENCIA + VERSIONADO ---------------- */
 
 const STORAGE_KEY = 'harumimi-state';
-const STATE_VERSION = 1;
+const STATE_VERSION = 2;
 
 function defaultState(){
   return {
@@ -24,41 +24,50 @@ let currentMethod = 'efectivo';
 let currentCustomerName = '';
 
 /**
- * Migra datos guardados por versiones anteriores al modelo de estado actual.
- * `raw` puede ser el objeto ya parseado desde storage, o null/undefined si
- * todavía no hay nada guardado.
+ * Migraciones numeradas: MIGRATIONS[n] lleva un estado de la versión n a la
+ * n+1 (muta y devuelve `st`). STATE_VERSION siempre es MIGRATIONS.length.
+ * Para un cambio de modelo: agregar un paso al final y subir STATE_VERSION.
  *
- * La v1 (single-file, sin `state.version`) no tenía `order.customerName`.
- * Detectamos esos datos "legacy" por la ausencia del campo `version` y les
- * completamos ese dato faltante antes de seguir. Futuros cambios de modelo
- * se agregan como pasos adicionales acá abajo, sin tocar el resto de la app.
+ * Historia: la v0 es la app de un solo archivo (sin campo `version`). La v1 se
+ * guardó con `version: 1` durante todos los cambios de esquema posteriores
+ * (nunca se incrementó), así que los datos con version 1 pueden o no tener ya
+ * `eventNameCustom` y `fondoInicial`. Por eso el paso 1→2 es idempotente y
+ * chequea si el campo ya existe: es la única detección por presencia que queda.
  */
-function migrateState(raw){
-  const saved = raw || {};
-  const isLegacy = !('version' in saved);
-  const merged = Object.assign(defaultState(), saved);
-
-  if(isLegacy){
-    merged.orders = (merged.orders || []).map(function(o){
+const MIGRATIONS = [
+  // 0 → 1: la v0 no tenía `order.customerName`
+  function(st){
+    st.orders = (st.orders || []).map(function(o){
       return Object.assign({ customerName:'' }, o);
     });
+    return st;
+  },
+  // 1 → 2: `eventNameCustom` y `fondoInicial` se sumaron sin subir la versión.
+  // `eventNameCustom` vino después de `eventNameSet`: en sesiones que ya tenían
+  // un nombre "resuelto" no podemos distinguir si fue el default o uno propio —
+  // lo más seguro es congelarlo como personalizado antes que pisar en silencio
+  // un nombre que Rudy ya viene viendo hace días.
+  function(st){
+    if(!('eventNameCustom' in st)) st.eventNameCustom = !!st.eventNameSet;
+    if(!('fondoInicial' in st)) st.fondoInicial = 0;
+    return st;
+  },
+];
+
+/**
+ * Migra datos guardados por versiones anteriores al modelo de estado actual.
+ * `raw` puede ser el objeto ya parseado desde storage, o null/undefined si
+ * todavía no hay nada guardado. Un estado sin `version` (o inválida) cuenta
+ * como v0; uno con una versión más nueva que la de esta app no se toca.
+ */
+function migrateState(raw){
+  let st = Object.assign({}, raw || {});
+  let v = (Number.isInteger(st.version) && st.version > 0) ? st.version : 0;
+  for(; v < STATE_VERSION; v++){
+    st = MIGRATIONS[v](st);
+    st.version = v + 1;
   }
-
-  // `eventNameCustom` se sumó despues de `eventNameSet`: en sesiones guardadas
-  // que ya tenian un nombre "resuelto" (el usuario cerro el modal, aceptando el
-  // default o escribiendo uno propio) no podemos distinguir cual fue — el
-  // criterio mas seguro es congelarlo como personalizado en vez de arriesgarnos
-  // a pisar en silencio un nombre que Rudy ya viene viendo hace dias.
-  if(!('eventNameCustom' in saved)){
-    merged.eventNameCustom = !!merged.eventNameSet;
-  }
-
-  merged.version = STATE_VERSION;
-
-  // Futuros pasos de migración, ej:
-  // if(merged.version < 2){ ...; merged.version = 2; }
-
-  return merged;
+  return Object.assign(defaultState(), st);
 }
 
 function saveState(){
