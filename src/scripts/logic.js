@@ -73,6 +73,61 @@ function migrateState(raw){
   return Object.assign(defaultState(), st);
 }
 
+/* ---------------- CARGA DESDE STORAGE ---------------- */
+
+const BACKUP_V1_KEY = 'harumimi-state-backup-v1';
+const CORRUPT_STATE_KEY = 'harumimi-state-corrupto';
+const RAW_BACKUP_BELOW_VERSION = 2; // los datos guardados con version < 2 se copian crudos antes de migrar
+
+/** Guarda `raw` bajo `key` solo si esa clave todavía no existe. true = queda guardado. */
+function keepOnce(storage, key, raw){
+  try{
+    if(storage.getItem(key) === null) storage.setItem(key, raw);
+    return true;
+  }catch(e){
+    return false;
+  }
+}
+
+/**
+ * Lee el estado guardado en `storage` (algo con getItem/setItem, p. ej.
+ * localStorage) y devuelve { state, status } sin lanzar nunca:
+ *  - 'empty' / 'unreadable': no hay nada (o no se pudo leer); estado por defecto, no se escribe nada.
+ *  - 'corrupt': el JSON no se puede leer; estado por defecto y el texto original
+ *    queda aparte en CORRUPT_STATE_KEY (la clave principal no se toca).
+ *  - 'ok': datos ya en la versión actual.
+ *  - 'migrated': datos viejos (version < 2). Antes de migrar se guarda una copia
+ *    cruda en BACKUP_V1_KEY (solo si no existía, para no pisar la primera copia)
+ *    y recién después se guarda el estado migrado.
+ *  - 'migrated-unsaved': se migró en memoria pero no se pudo guardar la copia
+ *    cruda o el estado nuevo; lo guardado queda como estaba.
+ */
+function loadStoredState(storage, key){
+  let raw;
+  try{ raw = storage.getItem(key); }
+  catch(e){ return { state: defaultState(), status: 'unreadable' }; }
+  if(raw === null || raw === undefined) return { state: defaultState(), status: 'empty' };
+
+  let parsed;
+  try{ parsed = JSON.parse(raw); }catch(e){ parsed = null; }
+  if(!isPlainObject(parsed)){
+    keepOnce(storage, CORRUPT_STATE_KEY, raw);
+    return { state: defaultState(), status: 'corrupt' };
+  }
+
+  const migrated = migrateState(parsed);
+  const version = Number.isInteger(parsed.version) ? parsed.version : 0;
+  if(version >= RAW_BACKUP_BELOW_VERSION) return { state: migrated, status: 'ok' };
+
+  if(!keepOnce(storage, BACKUP_V1_KEY, raw)) return { state: migrated, status: 'migrated-unsaved' };
+  try{
+    storage.setItem(key, JSON.stringify(migrated));
+  }catch(e){
+    return { state: migrated, status: 'migrated-unsaved' };
+  }
+  return { state: migrated, status: 'migrated' };
+}
+
 /**
  * Totales de una lista de pedidos: los anulados no suman. Sirve tanto para
  * la sesión abierta (Cierre) como para cualquier evento (Historial).
@@ -202,6 +257,7 @@ if(typeof module !== 'undefined' && module.exports){
   module.exports = {
     STATE_VERSION, MIGRATIONS, defaultState, migrateState,
     computeTotals, cashDifference, defaultEventNameFor, eventNameFor,
+    BACKUP_V1_KEY, CORRUPT_STATE_KEY, loadStoredState,
     BACKUP_APP_ID, BACKUP_MAX_AGE_DAYS, buildBackup, validateBackup, backupStatus,
   };
 }

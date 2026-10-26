@@ -20,12 +20,15 @@ function saveState(){
 
 async function loadState(){
   try{
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if(raw){
-      state = migrateState(JSON.parse(raw));
+    // loadStoredState no lanza: con datos viejos guarda una copia cruda antes de
+    // migrar, y con datos ilegibles conserva el texto original aparte.
+    const res = loadStoredState(localStorage, STORAGE_KEY);
+    state = res.state;
+    if(res.status === 'corrupt'){
+      showToast('⚠️ Los datos guardados estaban dañados: se conservó una copia aparte', { error:true, duration:5000 });
     }
   }catch(e){
-    // no hay datos guardados todavía, se queda con el estado por defecto
+    // localStorage inaccesible: se queda con el estado por defecto
   }
   render();
   onStateLoaded();

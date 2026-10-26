@@ -87,6 +87,14 @@ guardados con `version: 1` incluyen estados de antes y de después de que
 existieran `eventNameCustom` y `fondoInicial` (la versión no se incrementó
 cuando se sumaron), por eso el paso 1→2 es idempotente.
 
+Al cargar, `loadStoredState()` (en `logic.js`) protege los datos viejos:
+
+- Si lo guardado tiene `version < 2`, antes de migrar guarda el texto original
+  en `localStorage['harumimi-state-backup-v1']` (solo si esa clave no existe,
+  para no pisar la primera copia) y recién después guarda el estado migrado.
+- Si el JSON guardado está corrupto, la app arranca con el estado por defecto,
+  no borra nada y deja el texto original en `harumimi-state-corrupto`.
+
 ## Copia de seguridad
 
 Los datos viven solo en `localStorage` del dispositivo, así que en la pestaña
