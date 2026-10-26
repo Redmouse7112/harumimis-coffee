@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {
   STATE_VERSION, MIGRATIONS, defaultState, migrateState,
   computeTotals, cashDifference, eventNameFor,
+  BACKUP_MAX_AGE_DAYS, buildBackup, validateBackup, backupStatus,
 } = require('../src/scripts/logic.js');
 
 const order = (total, method, extra) =>
@@ -154,5 +155,121 @@ describe('eventNameFor (nombre del evento)', () => {
 
   test('nombre guardado sin la marca de personalizado se ignora', () => {
     assert.equal(eventNameFor({ eventNameCustom:false, eventName:'Viejo' }, now), 'Evento del 09/08/2025');
+  });
+});
+
+describe('copia de seguridad', () => {
+  const now = new Date(2025, 7, 20, 12);
+  const fullOrder = (extra) => Object.assign({
+    id:'o1', timestamp:'2025-08-09T15:00:00.000Z', customerName:'Naru',
+    items:[{ name:'Café', price:1000, qty:1 }], total:1000, method:'efectivo',
+    sessionId:1, voided:false,
+  }, extra);
+  const sample = () => Object.assign(defaultState(), { orders:[fullOrder()] });
+  const roundtrip = (backup) => validateBackup(JSON.stringify(backup));
+
+  test('exportar y volver a importar devuelve el mismo estado', () => {
+    const st = sample();
+    const res = roundtrip(buildBackup(st, now));
+    assert.equal(res.ok, true);
+    assert.deepEqual(res.state, st);
+    assert.deepEqual(res.summary, { orders:1, closures:0, menuItems:6 });
+    assert.equal(res.exportedAt, now.toISOString());
+  });
+
+  test('el archivo lleva app, schemaVersion y exportedAt', () => {
+    const b = buildBackup(sample(), now);
+    assert.equal(b.app, 'harumimi-coffee');
+    assert.equal(b.schemaVersion, STATE_VERSION);
+    assert.equal(b.exportedAt, now.toISOString());
+  });
+
+  test('una copia de una versión vieja se migra al importar', () => {
+    const b = buildBackup(sample(), now);
+    delete b.state.eventNameCustom;
+    b.state.eventNameSet = true;
+    b.schemaVersion = 1;
+    const res = roundtrip(b);
+    assert.equal(res.ok, true);
+    assert.equal(res.state.version, STATE_VERSION);
+    assert.equal(res.state.eventNameCustom, true);
+  });
+
+  test('rechaza texto que no es JSON', () => {
+    assert.equal(validateBackup('hola').ok, false);
+    assert.equal(validateBackup('').ok, false);
+  });
+
+  test('rechaza JSON que no es una copia de la app', () => {
+    assert.equal(validateBackup('[]').ok, false);
+    assert.equal(validateBackup('null').ok, false);
+    assert.equal(validateBackup(JSON.stringify(sample())).ok, false); // estado pelado, sin sobre
+    const b = buildBackup(sample(), now); b.app = 'otra-app';
+    assert.equal(roundtrip(b).ok, false);
+  });
+
+  test('rechaza una copia de una versión más nueva', () => {
+    const b = buildBackup(sample(), now); b.schemaVersion = STATE_VERSION + 1;
+    const res = roundtrip(b);
+    assert.equal(res.ok, false);
+    assert.match(res.error, /más nueva/);
+  });
+
+  test('rechaza schemaVersion faltante o inválido', () => {
+    for (const v of [undefined, '2', -1, 1.5]) {
+      const b = buildBackup(sample(), now); b.schemaVersion = v;
+      assert.equal(roundtrip(b).ok, false, String(v));
+    }
+  });
+
+  test('rechaza estados dañados', () => {
+    const mutate = (fn) => { const b = buildBackup(sample(), now); fn(b.state); return roundtrip(b); };
+    assert.equal(mutate(s => { s.orders = 'x'; }).ok, false);
+    assert.equal(mutate(s => { s.orders[0].total = 'mil'; }).ok, false);
+    assert.equal(mutate(s => { s.orders[0].method = 'cripto'; }).ok, false);
+    assert.equal(mutate(s => { s.orders[0].timestamp = 'ayer'; }).ok, false);
+    assert.equal(mutate(s => { s.closures = [null]; }).ok, false);
+    assert.equal(mutate(s => { s.menu[0].price = null; }).ok, false);
+    assert.equal(mutate(s => { s.sessionId = 0; }).ok, false);
+    assert.equal(mutate(s => { s.sessionSince = 'x'; }).ok, false);
+    assert.equal(mutate(s => { s.fondoInicial = 'x'; }).ok, false);
+    assert.equal(mutate(s => { delete s.state; s.menu = null; }).ok, false);
+  });
+
+  test('un estado sin datos con campos opcionales ausentes sigue siendo válido', () => {
+    const b = buildBackup(sample(), now);
+    delete b.state.fondoInicial;
+    assert.equal(roundtrip(b).ok, true);
+  });
+
+  describe('backupStatus (aviso de backup)', () => {
+    const withData = sample();
+    const empty = defaultState();
+    const daysAgo = (n) => new Date(now.getTime() - n * 86400000).toISOString();
+
+    test('sin datos no hay nada que avisar', () => {
+      assert.equal(backupStatus(null, empty, now).due, false);
+    });
+    test('hay datos y nunca se exportó: avisa', () => {
+      const s = backupStatus(null, withData, now);
+      assert.equal(s.due, true);
+      assert.equal(s.days, null);
+    });
+    test('exportó hace menos de 7 días: no avisa', () => {
+      assert.equal(backupStatus(daysAgo(3), withData, now).due, false);
+      assert.equal(backupStatus(daysAgo(BACKUP_MAX_AGE_DAYS), withData, now).due, false);
+    });
+    test('pasaron más de 7 días: avisa', () => {
+      const s = backupStatus(daysAgo(8), withData, now);
+      assert.equal(s.due, true);
+      assert.equal(s.days, 8);
+    });
+    test('una fecha guardada ilegible cuenta como nunca exportado', () => {
+      assert.equal(backupStatus('basura', withData, now).due, true);
+    });
+    test('solo cierres (sin pedidos) también cuenta como datos', () => {
+      const s = Object.assign(defaultState(), { closures:[{ sessionId:1 }] });
+      assert.equal(backupStatus(null, s, now).due, true);
+    });
   });
 });

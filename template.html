@@ -121,6 +121,17 @@
         <button class="close-btn" id="closeCajaBtn" disabled>Cerrar caja, descargar reporte y abrir sesión nueva</button>
       </div>
 
+      <div class="close-card">
+        <h3 class="backup-title">💾 Copia de seguridad</h3>
+        <p class="sub" style="margin:0 0 10px;">Los datos viven solo en este dispositivo. Exportá una copia cada tanto para no perder el historial.</p>
+        <div class="diff-banner neutral" id="backupStatus" style="margin-top:0;"></div>
+        <div class="backup-actions">
+          <button class="btn-secondary" id="exportBackupBtn">⬇ Exportar copia</button>
+          <button class="btn-secondary" id="importBackupBtn">⬆ Importar copia</button>
+        </div>
+        <input type="file" id="importBackupFile" accept="application/json,.json" hidden>
+      </div>
+
       <p class="sub" style="margin-top:4px;">¿Buscás cierres anteriores? Están en la pestaña Historial, cada uno con su reporte descargable.</p>
 
       <div class="app-footer">Hecho con ☕ por <b>RED</b></div>
@@ -164,6 +175,7 @@
 <script src="src/scripts/menu.js"></script>
 <script src="src/scripts/report.js"></script>
 <script src="src/scripts/cierre.js"></script>
+<script src="src/scripts/backup.js"></script>
 <script src="src/scripts/install.js"></script>
 <script src="src/scripts/splash.js"></script>
 

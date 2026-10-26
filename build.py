@@ -39,6 +39,7 @@ JS_FILES = [
     SRC / "scripts" / "menu.js",
     SRC / "scripts" / "report.js",
     SRC / "scripts" / "cierre.js",
+    SRC / "scripts" / "backup.js",
     SRC / "scripts" / "install.js",
     SRC / "scripts" / "splash.js",
 ]

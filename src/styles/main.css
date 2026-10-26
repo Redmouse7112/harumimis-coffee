@@ -320,6 +320,19 @@ h2.section-title{
 }
 .close-btn:disabled{ background:#E3E7EE; color:#9AA6B8; }
 
+/* ---------- COPIA DE SEGURIDAD ---------- */
+.backup-title{ font-family:'Baloo 2',sans-serif; color:var(--blue-deep); margin:0 0 4px; font-size:16px;}
+.backup-actions{ display:flex; gap:10px; margin-top:12px; }
+.backup-actions button{
+  flex:1; padding:12px 8px; border-radius:12px; border:none; font-weight:800; font-size:13px; cursor:pointer;
+  font-family:'Nunito',sans-serif;
+}
+.nav-btn{ position:relative; }
+.nav-btn.needs-backup::after{
+  content:''; position:absolute; top:6px; left:calc(50% + 8px); width:9px; height:9px;
+  border-radius:50%; background:var(--bad); border:1.5px solid #fff;
+}
+
 /* ---------- FOOTER CREDIT ---------- */
 .app-footer{
   margin-top:26px; padding-top:14px; border-top:1px solid var(--blue-line);

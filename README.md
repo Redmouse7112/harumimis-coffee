@@ -25,6 +25,7 @@ harumimis-coffee/
 │   │   ├── menu.js            # tab Menú (alta/edición/baja de productos)
 │   │   ├── report.js          # genera y descarga el resumen .docx del cierre
 │   │   ├── cierre.js          # tab Cierre (fondo inicial, arqueo, cerrar caja)
+│   │   ├── backup.js          # exportar/importar copia de seguridad (JSON) y aviso de backup
 │   │   ├── install.js         # botón "Instalar app" (beforeinstallprompt / aviso iOS)
 │   │   └── splash.js          # splash screen + bootstrap final (loadState)
 │   ├── styles/
@@ -81,6 +82,23 @@ guardados con `version: 1` incluyen estados de antes y de después de que
 existieran `eventNameCustom` y `fondoInicial` (la versión no se incrementó
 cuando se sumaron), por eso el paso 1→2 es idempotente.
 
+## Copia de seguridad
+
+Los datos viven solo en `localStorage` del dispositivo, así que en la pestaña
+Cierre hay una tarjeta **Copia de seguridad**:
+
+- **Exportar copia** descarga `harumimis-coffee-copia-AAAA-MM-DD.json` con
+  `{ app, schemaVersion, exportedAt, state }`.
+- **Importar copia** valida el archivo (que sea de esta app, que su
+  `schemaVersion` no sea más nuevo que el de la app y que el estado sea
+  coherente), lo migra si es de una versión vieja y pide confirmación antes de
+  **reemplazar** todo. El estado anterior queda guardado en
+  `harumimi-state-before-import` por si fue un error.
+- **Aviso**: si hay pedidos o cierres y nunca se exportó, o pasaron más de 7
+  días desde la última exportación, la tarjeta se marca en rojo y aparece un
+  punto sobre la pestaña Cierre. La fecha de la última exportación se guarda en
+  `harumimi-last-export`.
+
 ## Tests
 
 Sin dependencias, solo Node (>= 20):
@@ -90,7 +108,8 @@ node --test
 ```
 
 Cubren las funciones puras de `src/scripts/logic.js`: totales de sesión,
-diferencia de arqueo, `migrateState` y el nombre del evento. Ese archivo no
+diferencia de arqueo, `migrateState`, el nombre del evento y la validación de
+copias de seguridad. Ese archivo no
 puede tocar `document`, `localStorage` ni el `state` global.
 
 ## Deploy automático (GitHub Pages)

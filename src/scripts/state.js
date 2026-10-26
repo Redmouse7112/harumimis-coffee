@@ -150,4 +150,5 @@ function render(){
   renderMenuGrid();
   renderReceipt();
   renderSessionPill();
+  renderBackupStatus();
 }

@@ -4,6 +4,7 @@ function sessionTotals(){
 }
 
 function renderCierre(){
+  renderBackupStatus();
   const t = sessionTotals();
   document.getElementById('closeCount').textContent = t.count;
   document.getElementById('closeEfectivo').textContent = fmt(t.efectivo);

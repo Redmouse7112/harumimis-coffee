@@ -111,9 +111,97 @@ function eventNameFor(st, now){
   return (st.eventNameCustom && st.eventName) ? st.eventName : defaultEventNameFor(now.toISOString());
 }
 
+/* ---------------- COPIA DE SEGURIDAD ---------------- */
+
+const BACKUP_APP_ID = 'harumimi-coffee';
+const BACKUP_MAX_AGE_DAYS = 7;
+const PAYMENT_METHODS = ['efectivo', 'transferencia'];
+
+/** Contenido del archivo de copia: el estado completo más metadatos. */
+function buildBackup(st, now){
+  return {
+    app: BACKUP_APP_ID,
+    schemaVersion: st.version,
+    exportedAt: now.toISOString(),
+    state: st,
+  };
+}
+
+function isFiniteNumber(n){ return typeof n === 'number' && Number.isFinite(n); }
+function isPlainObject(o){ return o !== null && typeof o === 'object' && !Array.isArray(o); }
+
+/**
+ * Valida el texto de un archivo de copia antes de reemplazar nada. Devuelve
+ * { ok:true, state, exportedAt, summary } con el estado ya migrado, o
+ * { ok:false, error } con un mensaje para mostrarle a la persona.
+ */
+function validateBackup(text){
+  let data;
+  try{ data = JSON.parse(text); }
+  catch(e){ return { ok:false, error:'El archivo no es un JSON válido.' }; }
+
+  if(!isPlainObject(data) || data.app !== BACKUP_APP_ID){
+    return { ok:false, error:"Este archivo no es una copia de Harumimi's Coffee." };
+  }
+  if(!Number.isInteger(data.schemaVersion) || data.schemaVersion < 0){
+    return { ok:false, error:'La copia no indica de qué versión es.' };
+  }
+  if(data.schemaVersion > STATE_VERSION){
+    return { ok:false, error:'La copia es de una versión más nueva de la app. Actualizá la app e intentá de nuevo.' };
+  }
+  if(!isPlainObject(data.state)){
+    return { ok:false, error:'La copia no tiene datos de estado.' };
+  }
+
+  // Se valida el estado ya migrado, que es el que va a usar la app.
+  const st = migrateState(Object.assign({}, data.state, { version: data.schemaVersion }));
+  const fail = function(what){ return { ok:false, error:'La copia está dañada: ' + what + '.' }; };
+
+  if(!Array.isArray(st.menu) || !st.menu.every(function(m){
+    return isPlainObject(m) && typeof m.id === 'string' && typeof m.name === 'string' && isFiniteNumber(m.price);
+  })) return fail('el menú es inválido');
+
+  if(!Array.isArray(st.orders) || !st.orders.every(function(o){
+    return isPlainObject(o) && isFiniteNumber(o.total) && PAYMENT_METHODS.includes(o.method)
+      && isFiniteNumber(o.sessionId) && Array.isArray(o.items) && typeof o.timestamp === 'string'
+      && !Number.isNaN(new Date(o.timestamp).getTime());
+  })) return fail('hay pedidos inválidos');
+
+  if(!Array.isArray(st.closures) || !st.closures.every(function(c){
+    return isPlainObject(c) && isFiniteNumber(c.sessionId);
+  })) return fail('hay cierres inválidos');
+
+  if(!Number.isInteger(st.sessionId) || st.sessionId < 1) return fail('el número de sesión es inválido');
+  if(typeof st.sessionSince !== 'string' || Number.isNaN(new Date(st.sessionSince).getTime())){
+    return fail('falta la fecha de apertura de la sesión');
+  }
+  if(!isFiniteNumber(st.fondoInicial)) return fail('el fondo inicial es inválido');
+
+  return {
+    ok: true,
+    state: st,
+    exportedAt: typeof data.exportedAt === 'string' ? data.exportedAt : null,
+    summary: { orders: st.orders.length, closures: st.closures.length, menuItems: st.menu.length },
+  };
+}
+
+/**
+ * ¿Hay que avisar de que falta backup? Solo si hay algo que perder (pedidos o
+ * cierres) y nunca se exportó o pasaron más de BACKUP_MAX_AGE_DAYS días.
+ */
+function backupStatus(lastExportIso, st, now){
+  const hasData = st.orders.length > 0 || st.closures.length > 0;
+  const last = lastExportIso ? new Date(lastExportIso) : null;
+  const valid = last && !Number.isNaN(last.getTime());
+  const days = valid ? Math.floor((now.getTime() - last.getTime()) / 86400000) : null;
+  const due = hasData && (!valid || days > BACKUP_MAX_AGE_DAYS);
+  return { due, days, hasData };
+}
+
 if(typeof module !== 'undefined' && module.exports){
   module.exports = {
     STATE_VERSION, MIGRATIONS, defaultState, migrateState,
     computeTotals, cashDifference, defaultEventNameFor, eventNameFor,
+    BACKUP_APP_ID, BACKUP_MAX_AGE_DAYS, buildBackup, validateBackup, backupStatus,
   };
 }
