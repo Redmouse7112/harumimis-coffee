@@ -135,6 +135,13 @@ https://redmouse7112.github.io/harumimis-coffee/
   recibe la versión nueva en su próxima apertura, y los datos guardados
   (`localStorage`) no se tocan.
 
+## CI
+
+- `.github/workflows/test.yml`: en cada pull request hacia `main` y en cada push
+  a `nucleo` corre `node --test` y `python build.py`. No despliega nada.
+- `deploy.yml` también corre `node --test` antes de construir, así que un push a
+  `main` con tests rotos no se publica.
+
 ## Reporte de cierre
 
 Al cerrar caja se descarga automáticamente un `.docx` con el detalle del
